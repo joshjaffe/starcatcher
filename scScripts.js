@@ -2,14 +2,14 @@
     // when the web page window loads up, the game scripts will be read
     window.onload = function() {
 
-       var star = {
+     var star = {
         _x: null,
         _y: null,
         _xSpeed: null,
         _ySpeed: null,
 
          // add this to the variable list at the top of the star class
-    _visible: true,
+         _visible: true,
 
     //Create new star object with given starting position and speed
     //class functions exist to set other private variables
@@ -47,7 +47,7 @@
     visible: function() {
         return this._visible;
     },
-           
+
 };
 
 
@@ -58,8 +58,6 @@
     h = canvas.height = 500;
 
     //load images
-
-
     var whichShip = new Image();
     var ship1 = new Image();
     ship1.src="images/starship.png";
@@ -88,83 +86,97 @@
 
     // load variables that are global
     var gameOn=true;
-
+    var bones=0;
     var p1Score = 0, p2Score = 0;
+    var level = 1;
 
 // our stars are created using a single array with a class of information
-    var starCount=20;
-    var starArray=[];
+    function initArrays(count) {
 
-    // Create an array of stars
-    for (var i = 0; i < starCount; i++) {
-        // this assigns each element in the array all the information for the star by 
-        // using the 'star' class, pass the starting x,y locations 
-        //  and speeds into the array.
-        starArray.push(star.create(20,i+50,Math.random()*5,Math.random()*5));
-    }
-           
+        starCount=count;
+        starArray=[];
 
-    // using arrays to keep tract of star speeds and positions
-    starSpeed = new Array(8,3);
-    starPos = new Array();
-    shipPos = new Array();
-    var starVisible = 1;
+        // Create an array of stars
+        for (var i = 0; i < starCount; i++) {
+            // this assigns each element in the array all the information for the star by 
+            // using the 'star' class, pass the starting x,y locations 
+            //  and speeds into the array.
+            starArray.push(star.create(10+Math.random()*w-20,10+Math.random()*h-20,3-Math.random()*8,4-Math.random()*8));
+        }
+    } //close initArrays
+    initArrays(20);
 
-    // moving stars around the screen 
+    // moving stars + sounds + timer around the screen 
     var p1x=w/2+100, p1y=h/2, p2x=w/2-100, p2y=h/2;
-    starPos[0] = starPos[1] = 10; //sx is not used and out, starPos array in
-    shipPos[0] = shipPos[1] = 10;
     var bone = new Audio('audio/chomp.mp3');
+    var s = new Date();
+    var milliStart = s.getTime();
+    var timer, rTime, counter = 30;
+
+
+    function timerUpdate() {
+        d = new Date();
+        milli = d.getTime();
+        timer = (milli-milliStart)/1000.0;
+        document.getElementById("counter").innerHTML = Math.round(counter - timer);
+        if (counter-timer<0) {
+            {window.location.href= 'index.html#'+p1Score+'#'+p2Score;}
+        }
+    } // close timerUpdate
 
     // moving stars around the screen and update the players movement
     function starsUpdate () {
-       
+
     // keep star on the screen (use our tricks from last week to make if statements here)
-    ctx.drawImage(background,0,0,w,h);
+        ctx.drawImage(background,0,0,w,h);
 
-
-    
-        
     //  draw star on screen only if visible
         for (var i = 0; i < starCount; i++) {
             starArray[i].update();
             if (starArray[i].visible()) {
                 ctx.drawImage(starArray[i]._img, starArray[i]._x-starArray[i]._width/2, starArray[i]._y-starArray[i]._height/2, starArray[i]._width, starArray[i]._height);
             }
-            if (starArray[i]._x>w) (starArray[i]._x = 0) 
-            if (starArray[i]._x<0) (starArray[i]._x = w) 
+            if (starArray[i]._x>w || starArray[i]._x < 0) {starArray[i]._xSpeed = -starArray[i]._xSpeed}
             if (starArray[i]._y>h || starArray[i]._y<0) {starArray[i]._ySpeed = -starArray[i]._ySpeed}
-            
+
             var d1=Math.sqrt(Math.pow(p1x-starArray[i]._x,2)+Math.pow(p1y-starArray[i]._y,2));
             var d2=Math.sqrt(Math.pow(p2x-starArray[i]._x,2)+Math.pow(p2y-starArray[i]._y,2));
             if (d1<20) {scoring(i,1)}
             if (d2<20) {scoring(i,2)}
 
-
         }//endFor
-        
+
     } //close of starsUpdate
 
  //  scoring functions to place and score stars
-    function scoring(k,wp) {
-        starArray[k]._visible=false;
-        if (wp==1) {
+ function scoring(k,wp) {
+    starArray[k]._visible=false;
+    if (wp==1) {
             // need to place a small star next to player 1 score
-            p1Score++;
-            $("#p1ScoreDisp").text(p1Score);
-            starArray[k]._x = w +200;
-            starArray[k]._xSpeed = 0;
-            bone.play();
-        }
-        else if (wp==2) {
-            p2Score++;
-            $("#p2ScoreDisp").text(p2Score);
-            starArray[k]._x = w +200;
-            starArray[k]._xSpeed = 0;
-            bone.play();
-        }
+        p1Score++;
+        $("#p1ScoreDisp").text(p1Score);
+        starArray[k]._x = w +200;
+        starArray[k]._xSpeed = 0;
+        bone.play();
+        bones++;
     }
-           
+    else if (wp==2) {
+        p2Score++;
+        $("#p2ScoreDisp").text(p2Score);
+        starArray[k]._x = w +200;
+        starArray[k]._xSpeed = 0;
+        bone.play();
+        bones++;
+    }
+    if (bones==starCount) {
+            level ++;
+            d = new Date();
+            milliStart = d.getTime();
+            initArrays(20*level);
+            bones = 0;
+        }
+}  // close scoring
+
     //Listens to app for keyboard actions
     addEventListener("keydown", function (e) {
 
@@ -203,7 +215,7 @@
     //  then calls itself out again
 
      // a new array is made to keep track of a button being held down
-    var keysDown = [];
+     var keysDown = [];
 
     // if the key is held down, the keycode is placed in array
     // then it is deleted upon keyup command.  
@@ -214,13 +226,16 @@
         keysDown[e.keyCode] = true;
 
          // start the game with keyboard command
-        if (e.keyCode == 32) {
-            if (gameOn == false) {
-                gameOn = true;
-                main();// (key: space bar to start game)
+         if (e.keyCode == 32) {
+            if (gameOn == true) {
+                gameOn = false;
+                rTime = timer;
             }
             else {
-                gameOn = false;
+                d = new Date();
+                milliStart = d.getTime()-rTime*1000.0;
+                gameOn = true;
+                main();// (key: space bar to start game)
             }
 
         }//end if
@@ -246,22 +261,22 @@
         delete keysDown[e.keyCode];
     }, false); 
     {
-    if (p1x>w) {p1x = 0}
-    if (p1x<0) {p1x = w}
-    if (p1y>h) {p1x = 0}
-    if (p1y<0) {p1x = h}
-    if (p2x>w) {p2x = 0}
-    if (p2x<0) {p2x = w}
-    if (p2y>h) {p2x = 0}
-    if (p2y<0) {p2x = h}
-    }
+        if (p1x>w) {p1x = 0}
+            if (p1x<0) {p1x = w}
+                if (p1y>h) {p1x = 0}
+                    if (p1y<0) {p1x = h}
+                        if (p2x>w) {p2x = 0}
+                            if (p2x<0) {p2x = w}
+                                if (p2y>h) {p2x = 0}
+                                    if (p2y<0) {p2x = h}
+                                }
 
-    
+
 
 
 
      //player movement
-    function playerUpdate() {
+     function playerUpdate() {
         //player two hodling down a key using the array keysDown
         if (87 in keysDown) {// P2 holding down the w key
             p2y -= 5;
@@ -290,19 +305,28 @@
             p1y += 5;
         }
         //draw images of ships
-        ctx.drawImage(whichShip, p1x-20, p1y-20, 40, 40);
-        ctx.drawImage(whichShip2, p2x-20, p2y-20, 40, 40);
-    }
+        if (p1x>w) {p1x = w-10}
+            if (p1x<0) {p1x = 10}
+                if (p1y>h) {p1y = h-10}
+                    if (p1y<0) {p1y = 10}
+                        if (p2x>w) {p2x = w-10}
+                            if (p2x<0) {p2x = 10}
+                                if (p2y>h) {p2y = h-10}
+                                    if (p2y<0) {p2y = 10}
+                                        ctx.drawImage(whichShip, p1x-20, p1y-20, 40, 40);
+                                    ctx.drawImage(whichShip2, p2x-20, p2y-20, 40, 40);
+                                }
 
-        function main(){
-            ctx.clearRect(0,0,w,h);
-            ctx.globalAlpha = .3;
-            ctx.drawImage(background,0,0,w,h);
-            ctx.globalAlpha = 1;
-            starsUpdate();
-            playerUpdate();
-            if (gameOn) {requestAnimationFrame(main);}
-    }
-    main();
-}              
+                                function main(){
+                                    ctx.clearRect(0,0,w,h);
+                                    ctx.globalAlpha = .3;
+                                    ctx.drawImage(background,0,0,w,h);
+                                    ctx.globalAlpha = 1;
+                                    starsUpdate();
+                                    playerUpdate();
+                                    timerUpdate();
+                                    if (gameOn) {requestAnimationFrame(main);}
+                                }
+                                main();
+                            }              
 //close window on load   
